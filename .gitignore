@@ -1,0 +1,36 @@
+.env
+*.env
+!.env.example
+
+#--python --
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+env/
+ 
+# --- Data (raw CSVs are large, and shouldn't live in git) ---
+synthea_sample_data_csv_nov2021/
+*.csv
+ 
+# --- Airflow ---
+dags/__pycache__/
+logs/
+airflow.db
+airflow.cfg
+airflow-webserver.pid
+ 
+# --- Jupyter (if you use notebooks for exploration) ---
+.ipynb_checkpoints/
+ 
+# --- OS / editor junk ---
+.DS_Store
+Thumbs.db
+.vscode/
+*.swp
+ 
+# --- Local logs / output ---
+*.log
+output/
