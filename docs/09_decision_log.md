@@ -75,3 +75,20 @@ One column (`patients.birthdate`) was kept despite not being directly used by th
 ## Format for future entries
 
 New decisions should follow the same shape: **Decision** (what was chosen), **Why** (the reasoning, including what was ruled out and why). Entries are numbered in chronological order and never renumbered or removed, even if a later decision reverses an earlier one — the log is a history, not just a current-state summary.
+
+## Decision: encounters.code/description kept as degenerate dimension
+Date: 2026-07-25
+Context: 49 distinct encounter type codes found in staging.encounters. Not tiny, but none
+of the 5 locked business questions require breakdown by encounter type.
+Decision: keep code/description as plain columns on fact_encounters (degenerate dimension),
+not promoted to a separate dim_encounter_type.
+Revisit: if a future question needs encounter-type breakdown, promote to its own dim then.
+
+## Finding: duration_minutes outliers in outpatient encounters (code 185347001)
+Date: 2026-07-25
+A subset of "Encounter for problem (procedure)" outpatient encounters show implausible
+durations (300k-530k minutes, ~10-12 months) — likely a Synthea data generation artifact,
+not realistic clinical outpatient visits.
+Decision: keep duration_minutes as a stored measure for completeness, but flag that
+duration-based averages/aggregates should be filtered or interpreted with this caveat in mind.
+Not fixed/excluded since none of the 5 locked business questions rely on average visit duration.
