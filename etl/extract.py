@@ -179,3 +179,16 @@ WHERE
 ORDER BY e.start_ts;
 """
   return extract(oltp_conn,sql,{"watermark":watermark})
+
+
+def extract_lookup_dim(conn):
+  logger.info(f"Loading lookup tables in memory")
+  lookup = {
+    "patient":pd.read_sql_query("SELECT source_patient_id,patient_key FROM dim_patient",conn),
+    "provider":pd.read_sql_query("SELECT source_provider_id, provider_key FROM dim_provider",conn),
+    "organization":pd.read_sql_query("SELECT source_organization_id,organization_key FROM dim_organization",conn),
+    "date":pd.read_sql_query("SELECT date_key from dim_date",conn),
+    "diagnosis":pd.read_sql_query("SELECT code, diagnosis_key FROM dim_diagnosis",conn),
+    "procedure":pd.read_sql_query("SELECT code, procedure_key FROM dim_procedure",conn)
+  }
+  return lookup
