@@ -88,3 +88,23 @@ def load_fact_encounters(conn, encounters_df):
   ON CONFLICT (source_encounter_id) DO NOTHING;
 """
   _execute(conn,sql,encounters_df,'fact_encounters')
+
+def load_bridge_encounter_diagnosis(conn, bridge_df):
+  sql = """
+  INSERT
+  INTO
+  bridge_encounter_diagnosis (encounter_key, diagnosis_key)
+  VALUES(%(encounter_key)s, %(diagnosis_key)s)
+  ON CONFLICT (encounter_key, diagnosis_key) DO NOTHING;
+"""
+  _execute(conn, sql, bridge_df, 'bridge_encounter_diagnosis')
+
+def load_bridge_encounter_procedure(conn, bridge_df):
+  sql = """
+  INSERT
+  INTO
+  bridge_encounter_procedure (encounter_key, procedure_key,base_cost)
+  VALUES(%(encounter_key)s, %(procedure_key)s,%(base_cost)s)
+  ON CONFLICT (encounter_key, procedure_key) DO NOTHING;
+"""
+  _execute(conn, sql, bridge_df, 'bridge_encounter_procedure')
