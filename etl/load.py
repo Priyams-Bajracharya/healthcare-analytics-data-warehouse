@@ -78,3 +78,13 @@ def load_dim_procedure(conn,procedure_df):
   ON CONFLICT (code) DO NOTHING;
 """  
   _execute(conn,sql,procedure_df,'dim_procedure')  
+
+def load_fact_encounters(conn, encounters_df):
+  sql = """
+  INSERT 
+  INTO 
+  fact_encounters(source_encounter_id, patient_key, provider_key , organization_key , date_key , encounterclass , code , description , total_claim_cost , duration_minutes , start_ts , stop_ts)
+  VALUES(%(source_encounter_id)s,%(patient_key)s,%(provider_key)s,%(organization_key)s,%(date_key)s,%(encounterclass)s,%(code)s,%(description)s,%(total_claim_cost)s,%(duration_minutes)s,%(start_ts)s,%(stop_ts)s)
+  ON CONFLICT (source_encounter_id) DO NOTHING;
+"""
+  _execute(conn,sql,encounters_df,'fact_encounters')
