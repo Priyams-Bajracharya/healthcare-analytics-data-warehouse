@@ -108,3 +108,60 @@ def build_fact_encounters(encounters_df:pd.DataFrame , lookups: dict) -> pd.Data
   logger.info(f"Transformed {len(result)} rows, skipped {initial_count - len(result)}")
 
   return result
+
+BRIDGE_DIAGNOSIS_COLUMNS = ['encounter_key', 'diagnosis_key']
+
+def build_bridge_encounter_diagnosis(conditions_df : pd.DataFrame , lookups: dict)-> pd.DataFrame :
+  if conditions_df.empty:
+    logger.info(f"No conditions extracted -nothing to transform")
+    return pd.DataFrame(columns=BRIDGE_DIAGNOSIS_COLUMNS)
+
+  df = conditions_df.copy()
+  df = df.merge(
+    lookups["encounter"],
+    left_on = "encounter",
+    right_on = "source_encounter_id",
+    how = "left"
+  )
+
+  df = _drop_unmatched(df,'encounter_key','encounter_key(fact_encounter)')
+
+  df = df.merge(
+    lookups["diagnosis"],
+    on = "code",
+    how = "left"      
+  )
+
+  df = _drop_unmatched(df,'diagnosis_key','diagnosis_key(dim_diagnosis)')
+
+  result = df[BRIDGE_DIAGNOSIS_COLUMNS].reset_index(drop = True)
+  logger.info(f"Built diagnosis bridge with {len(result)} rows")
+  return result
+
+BRIDGE_PROCEDURES_COLUMNS = ["encounter_key","procedure_key","base_cost"]
+def build_bridge_encounter_procedure(procedure_df : pd.DataFrame, lookups :dict) -> pd.DataFrame:
+  if procedure_df.empty:
+    logger.info(f"No procedures extracted -nothing to transform")
+    return pd.DataFrame(columns=BRIDGE_PROCEDURES_COLUMNS)
+
+  df = procedure_df.copy()
+  df = df.merge(
+    lookups["encounter"],
+    left_on="encounter",
+    right_on="source_encounter_id",
+    how ="left"
+  )
+
+  df = _drop_unmatched  (df,'encounter_key','encounter_key(facts_encounter)')
+
+  df = df.merge(
+    lookups["procedure"],
+    on = "code",
+    how = "left"
+  )
+
+  df = _drop_unmatched(df,'procedure_key','procedure_key(dim_procedure)')
+
+  result = df[BRIDGE_PROCEDURES_COLUMNS].reset_index(drop=True)
+  logger.info(f"Built procedure bridge with {len(result)} rows")
+  return result

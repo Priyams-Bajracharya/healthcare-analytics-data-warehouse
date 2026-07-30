@@ -192,3 +192,8 @@ def extract_lookup_dim(conn):
     "procedure":pd.read_sql_query("SELECT code, procedure_key FROM dim_procedure",conn)
   }
   return lookup
+
+def extract_encounter_lookup(conn):
+  logger.info(f"Loading encounter lookup in memory ")
+  return pd.read_sql_query("SELECT source_encounter_id,encounter_key FROM fact_encounters",conn)
+
