@@ -162,6 +162,8 @@ def build_bridge_encounter_procedure(procedure_df : pd.DataFrame, lookups :dict)
 
   df = _drop_unmatched(df,'procedure_key','procedure_key(dim_procedure)')
 
+  df = df.groupby(['encounter_key', 'procedure_key'], as_index=False)['base_cost'].sum()
+
   result = df[BRIDGE_PROCEDURES_COLUMNS].reset_index(drop=True)
   logger.info(f"Built procedure bridge with {len(result)} rows")
   return result
