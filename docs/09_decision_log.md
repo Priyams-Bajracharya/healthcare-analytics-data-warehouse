@@ -92,3 +92,60 @@ not realistic clinical outpatient visits.
 Decision: keep duration_minutes as a stored measure for completeness, but flag that
 duration-based averages/aggregates should be filtered or interpreted with this caveat in mind.
 Not fixed/excluded since none of the 5 locked business questions rely on average visit duration.
+
+## Decision: aggregate base_cost for repeated procedures within an encounter
+Date: 2026-08-01
+Context: bridge_encounter_procedure has a composite PK on (encounter_key, procedure_key).
+While testing load.py against real data, the loaded row count (68,926) came in 256 rows
+short of the transformed row count (69,182), even though build_bridge_encounter_procedure
+dropped nothing. Traced to ON CONFLICT (encounter_key, procedure_key) DO NOTHING silently
+discarding rows where the same procedure code was performed multiple times within a single
+encounter (verified via staging.procedures GROUP BY encounter, code — some encounters had
+the same procedure repeated up to 13 times, e.g. code 431182000). Each discarded row's
+base_cost was being lost, directly undercounting business question #2 ("which procedures
+generate the most expense").
+Decision: build_bridge_encounter_procedure now groups by (encounter_key, procedure_key)
+and sums base_cost before returning, so repeated procedures are aggregated into one row
+with correct total cost instead of relying on ON CONFLICT to silently drop duplicates.
+Verified: 69,182 extracted -> 68,926 aggregated rows -> 68,926 loaded with zero conflict
+drops (previously: 69,182 extracted -> 68,926 loaded via silent drop, undercounting cost
+on the 256 affected rows).
+
+## Decision: dim_diagnosis/dim_procedure built from full code history, not the fact/bridge date window
+Date: 2026-08-01
+Context: dim_diagnosis and dim_procedure were originally built using extract_conditions_full/
+extract_procedures_full, which are bounded to 2000-01-01–2021-01-01 (the same window used
+for the fact/bridge full-load batch, per Decision #4's incremental-demo split). While
+building pipeline.py, checked whether any diagnosis/procedure codes exist only in the
+held-back 2021 incremental data and not in 2000–2020 — found 6 diagnosis codes and 3
+procedure codes that are 2021-only (verified via staging query comparing code sets on
+either side of the 2021-01-01 boundary). Since dims have no time axis (per earlier project
+notes), building them from the same date-bounded extract used for facts/bridges meant
+these 9 codes would be missing from dim_diagnosis/dim_procedure at the time an incremental
+run tried to bridge them — silently dropped by _drop_unmatched with no error, undercounting
+diagnosis/procedure business questions during the incremental-demo run specifically.
+Decision: added extract_conditions_all/extract_procedures_all (no upper date bound;
+staging.encounters already only contains >= 2000-01-01 per Decision #3, so no WHERE
+clause needed) used exclusively for building dim_diagnosis/dim_procedure in pipeline.py's
+Stage 1, regardless of full/incremental mode. extract_conditions_full/extract_procedures_full
+remain unchanged, still used for fact/bridge date-windowed loading. Verified: pipeline.py
+--full-reload on a truncated warehouse correctly loads 193 diagnosis codes and 170
+procedure codes (up from 187/167) in the very first run, before any incremental run occurs.
+
+
+## Decision: single-fact-table design supersedes Decision #5's fact_claims plan; claims.csv fully out of scope
+Date: 2026-08-01 (documented retroactively — decision was made earlier during schema locking)
+Context: Decision #5 (claims_transactions.csv verified, then descoped) described fact_claims
+as sourced from a trimmed claims.csv, implying a two-fact-table model (fact_encounters +
+fact_claims). The project's actual locked schema (6 dims, 1 fact table fact_encounters,
+2 bridge tables) uses a single-fact-table design — fact_claims was never built, only
+planned in Decision #5. total_claim_cost on fact_encounters already answers the project's
+cost-related business questions (highest cost by diagnosis, most expensive procedures)
+without needing a separate claims-grain fact table.
+Decision: claims.csv is fully out of scope — not staged, not curated, not referenced by
+any dim/fact/bridge table. Decision #5's fact_claims plan is superseded by the
+single-fact-table design; it was a planning-stage idea dropped once the actual data model
+was locked, never built and then removed. The claims_transactions <-> encounters join
+verified in Decision #5 remains valid evidence that Synthea's financial and clinical data
+are genuinely joinable, useful if fact_claims is ever added in future work, but no claims
+data currently flows through the pipeline.
