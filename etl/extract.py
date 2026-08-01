@@ -161,6 +161,38 @@ WHERE
 def extract_conditions_full(conn):
   return extract_conditions(conn,'2000-01-01','2021-01-01')
 
+def extract_conditions_all(conn):
+  sql = """
+SELECT
+	c.patient,
+	c.encounter,
+	c.code,
+	c.description
+FROM
+	staging.conditions c
+JOIN staging.encounters e 
+ON
+	c.encounter = e.id;
+"""
+  return extract(conn, sql)
+
+
+def extract_procedures_all(conn):
+  sql = """
+  SELECT
+	p.patient,
+  p.encounter,
+	p.code,
+	p.description,
+	p.base_cost
+FROM
+	staging."procedures" p
+JOIN staging.encounters e 
+ON
+	p.encounter = e.id;
+"""
+  return extract(conn, sql)
+
 def extract_conditions_incremental(oltp_conn,dw_conn):
   watermark = get_watermark(dw_conn)
   sql = """
