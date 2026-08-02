@@ -27,6 +27,10 @@ from etl.load import (
   load_bridge_encounter_diagnosis, load_bridge_encounter_procedure,
 )
 
+from etl.quality import (
+   run_quality_checks
+)
+
 def parse_args():
   parser = argparse.ArgumentParser(description="Healthcare DW ETL pipeline")
   parser.add_argument(
@@ -104,6 +108,7 @@ def main():
       batch_conditions_df = extract_conditions_full(oltp_conn)
 
     fact_encounters = build_fact_encounters(batch_encounters_df,lookups)
+    run_quality_checks(fact_encounters ,'fact_encounters',['patient_key','provider_key','organization_key'],['total_claim_cost'])
     load_fact_encounters(dw_conn,fact_encounters)
     logger.info(f"Fact load completed in {time.time() - t0:.2f}s")
 
@@ -111,9 +116,11 @@ def main():
     t0 = time.time()
     lookups["encounter"] = extract_encounter_lookup(dw_conn)
     bridge_encounter_diagnosis_df = build_bridge_encounter_diagnosis(batch_conditions_df,lookups)
+    run_quality_checks(bridge_encounter_diagnosis_df,'bridge_encounter_diagnosis',['encounter_key','diagnosis_key'])
     load_bridge_encounter_diagnosis(dw_conn,bridge_encounter_diagnosis_df)
 
     bridge_encounter_procedure_df = build_bridge_encounter_procedure(batch_procedures_df,lookups)
+    run_quality_checks(bridge_encounter_procedure_df,'bridge_encounter_procedure',['encounter_key','procedure_key'],['base_cost'])
     load_bridge_encounter_procedure(dw_conn,bridge_encounter_procedure_df)
     logger.info(f"Bridge load completed in {time.time() - t0:.2f}s")
 
