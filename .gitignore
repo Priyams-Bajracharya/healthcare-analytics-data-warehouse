@@ -34,3 +34,4 @@ Thumbs.db
 # --- Local logs / output ---
 *.log
 output/
+logs/

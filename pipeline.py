@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import time
+from datetime import datetime
 
 import psycopg2
 from dotenv import load_dotenv
@@ -40,9 +41,19 @@ def parse_args():
   )
   return parser.parse_args()
 
+LOG_DIR = "logs"
+os.makedirs(LOG_DIR, exist_ok=True)
+
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+log_filename = os.path.join(LOG_DIR, f"pipeline_{timestamp}.log")
+
 logging.basicConfig(
   level=logging.INFO,
-  format="%(asctime)s  %(levelname)s [%(filename)s:%(lineno)d] %(message)s"
+  format="%(asctime)s  %(levelname)s [%(filename)s:%(lineno)d] %(message)s",
+  handlers = [
+     logging.FileHandler(log_filename),
+     logging.StreamHandler()
+  ]
 )
 logger = logging.getLogger(__name__)
 
