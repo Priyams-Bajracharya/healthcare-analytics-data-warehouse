@@ -110,9 +110,13 @@ def main():
     lookups = extract_lookup_dim(dw_conn)
 
     if mode == 'INCREMENTAL':
-      batch_encounters_df = extract_encounters_incremental(oltp_conn, dw_conn)
-      batch_procedures_df = extract_procedures_incremental(oltp_conn, dw_conn)
-      batch_conditions_df = extract_conditions_incremental(oltp_conn, dw_conn)
+      watermark = get_watermark(dw_conn)
+
+      logger.info(f"Running incremental load from {watermark}")
+      
+      batch_encounters_df = extract_encounters_incremental(oltp_conn, watermark)
+      batch_procedures_df = extract_procedures_incremental(oltp_conn, watermark)
+      batch_conditions_df = extract_conditions_incremental(oltp_conn, watermark)
     else:
       batch_encounters_df = extract_encounters_full(oltp_conn)
       batch_procedures_df = extract_procedures_full(oltp_conn)

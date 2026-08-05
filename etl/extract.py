@@ -72,8 +72,7 @@ FROM
   return watermark
 
 
-def extract_encounters_incremental(oltp_conn,dw_conn):
-  watermark = get_watermark(dw_conn)
+def extract_encounters_incremental(oltp_conn,watermark):
   sql = """
 SELECT
 	id,
@@ -119,8 +118,8 @@ def extract_procedures_full(conn):
   return extract_procedures(conn,'2000-01-01','2021-01-01')
 
 
-def extract_procedures_incremental(oltp_conn, dw_conn):
-  watermark =get_watermark(dw_conn)
+def extract_procedures_incremental(oltp_conn, watermark):
+
   sql = """
   SELECT
     p.patient,
@@ -193,8 +192,8 @@ ON
 """
   return extract(conn, sql)
 
-def extract_conditions_incremental(oltp_conn,dw_conn):
-  watermark = get_watermark(dw_conn)
+def extract_conditions_incremental(oltp_conn,watermark):
+
   sql = """
   SELECT
 	c.patient,
